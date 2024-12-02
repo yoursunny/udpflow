@@ -15,4 +15,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go build .
+      - run: go build -v .
+      - name: Check code style
+        run: |
+          go mod tidy
+          go fmt ./...
+          go vet ./...
+          git diff --exit-code

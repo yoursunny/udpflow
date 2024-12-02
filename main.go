@@ -7,9 +7,9 @@ import (
 	"net"
 	"net/netip"
 	"os"
-	"sync"
 
 	"github.com/urfave/cli/v2"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -44,18 +44,16 @@ func main() {
 			}
 			defer sockB.Close()
 
-			var wg sync.WaitGroup
-			wg.Add(2)
-			go func() {
-				defer wg.Done()
-				io.Copy(sockB, sockA)
-			}()
-			go func() {
-				defer wg.Done()
-				io.Copy(sockA, sockB)
-			}()
-			wg.Wait()
-			return nil
+			var g errgroup.Group
+			g.Go(func() error {
+				_, e := io.Copy(sockB, sockA)
+				return e
+			})
+			g.Go(func() error {
+				_, e := io.Copy(sockA, sockB)
+				return e
+			})
+			return g.Wait()
 		},
 	}
 	if e := app.Run(os.Args); e != nil {
